@@ -33,6 +33,7 @@ export default function UploadPage() {
         className="btn btn-primary w-full mt-4"
         onClick={handleUpload}
       >
+        
         Upload
       </button>
     </div>
