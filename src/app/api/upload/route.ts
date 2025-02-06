@@ -1,33 +1,46 @@
-// app/api/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
+import pool from "@/lib/db";
 
 export async function POST(req: NextRequest) {
-  const formData = await req.formData();
-  const file = formData.get("file") as File;
+  try {
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
 
-  if (!file) {
-    return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-  }
+    if (!file) {
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+    // Read the file as a buffer
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-  const worksheet = workbook.worksheets[0];
-  const jsonData: any[] = [];
+    // Store file in `files` table
+    const [fileResult]: any = await pool.query(
+      "INSERT INTO files (filename, upload_date, file_data) VALUES (?, NOW(), ?)",
+      [file.name, buffer]
+    );
 
-  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    if (rowNumber === 1) return; // Skip header
+    const fileId = fileResult.insertId;
 
-    const rowData: any = {};
-    row.eachCell((cell, colNumber) => {
-      const header = worksheet.getRow(1).getCell(colNumber).value;
-      rowData[header as string] = cell.value;
+    // Parse XLSX file and store data in `file_contents`
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    const worksheet = workbook.worksheets[0];
+
+    const rows = [];
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header
+      rows.push([fileId, row.getCell(1).value, row.getCell(2).value, row.getCell(3).value]);
     });
 
-    jsonData.push(rowData);
-  });
+    await pool.query(
+      "INSERT INTO file_contents (file_id, first_name, last_name, email) VALUES ?",
+      [rows]
+    );
 
-  return NextResponse.json(jsonData);
+    return NextResponse.json({ message: "File uploaded successfully", fileId });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

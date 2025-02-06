@@ -1,4 +1,4 @@
-"use client"; // Ensure it runs in the browser
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -24,36 +24,29 @@ const BrowsePage = () => {
 
   return (
     <div className="container mx-auto my-10 p-5">
-      <h1 className="text-3xl font-bold mb-6 text-center">📁 Uploaded Files</h1>
-
-      <div className="overflow-x-auto">
-        <table className="table table-zebra w-full">
-          <thead>
-            <tr className="bg-blue-500 text-white text-lg">
-              <th>ID</th>
-              <th>Filename</th>
-              <th>Upload Date</th>
-              <th>Actions</th>
+      <h1 className="text-2xl font-bold mb-5">Uploaded Files</h1>
+      <table className="table w-full border">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Filename</th>
+            <th>Upload Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {files.map((file) => (
+            <tr key={file.id}>
+              <td>{file.id}</td>
+              <td>
+                <Link href={`/browse/${file.id}`} className="text-blue-500 hover:underline">
+                  {file.filename}
+                </Link>
+              </td>
+              <td>{new Date(file.upload_date).toLocaleString()}</td>
             </tr>
-          </thead>
-          <tbody>
-            {files.map((file) => (
-              <tr key={file.id} className="hover">
-                <td>{file.id}</td>
-                <td>
-                  <Link href={`/browse/${file.id}`} className="text-blue-600 hover:underline">
-                    {file.filename}
-                  </Link>
-                </td>
-                <td>{new Date(file.upload_date).toLocaleString()}</td>
-                <td>
-                  <button className="btn btn-sm btn-primary">Download</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
